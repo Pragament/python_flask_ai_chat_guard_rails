@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Add Rule</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 10px;
+      width: 300px;
+    }
+    input, button {
+      width: 100%;
+      margin: 5px 0;
+      padding: 8px;
+      box-sizing: border-box;
+    }
+    ul {
+      margin-top: 10px;
+      padding-left: 20px;
+    }
+    li {
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Add Rule</h2>
+  <input type="text" id="urlPattern" placeholder="URL pattern (RegEx)" />
+  <input type="text" id="cssSelector" placeholder="CSS Selector" />
+  <button id="addRule">Add Rule</button>
+
+  <h3>Rules:</h3>
+  <ul id="ruleList"></ul>
+
+  <script src="popup.js"></script>
+</body>
+</html>
