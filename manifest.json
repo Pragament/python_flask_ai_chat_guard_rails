@@ -23,7 +23,7 @@
   "options_page": "options.html",
   "web_accessible_resources": [
     {
-      "resources": ["sidebar.html", "sidebar.js", "sidebar.css"],
+      "resources": ["sidebar.html", "sidebar.js", "sidebar.css","logs.html"],
       "matches": ["<all_urls>"]
     }
   ]

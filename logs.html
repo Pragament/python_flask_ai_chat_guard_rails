@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Logs Viewer</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h2 {
+      margin-bottom: 10px;
+    }
+    input, button, select {
+      margin: 5px;
+      padding: 6px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+    }
+    tr:nth-child(even){background-color: #f9f9f9;}
+    th {
+      background-color: #f2f2f2;
+    }
+    .details {
+      margin-top: 10px;
+      padding: 10px;
+      border: 1px solid #ddd;
+      background-color: #fafafa;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h2>🧾 Logs</h2>
+
+  <label>Computer ID:</label>
+  <input type="text" id="filterComputerId" />
+
+  <label>Start Date:</label>
+  <input type="date" id="startDate" />
+
+  <label>End Date:</label>
+  <input type="date" id="endDate" />
+
+  <label>Search Prompt/Answer:</label>
+  <input type="text" id="searchInput" />
+
+  <button onclick="loadLogs()">🔍 Filter</button>
+  <button onclick="deleteSelected()">🗑️ Delete Selected</button>
+  <button onclick="selectAll()">✅ Select All</button>
+
+  <table id="logTable">
+    <thead>
+      <tr>
+        <th>Select</th>
+        <th>ID</th>
+        <th>Computer ID</th>
+        <th>Prompt (Preview)</th>
+        <th>Time</th>
+        <th>View</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div id="logDetails" class="details"></div>
+
+  <script>
+    async function loadLogs() {
+      const computerId = document.getElementById('filterComputerId').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const searchText = document.getElementById('searchInput').value.toLowerCase();
+
+      let url = 'http://localhost:5001/api/logs?';
+      if (computerId) url += `computer_id=${computerId}&`;
+      if (startDate) url += `start_date=${startDate}&`;
+      if (endDate) url += `end_date=${endDate}&`;
+
+      const res = await fetch(url);
+      const logs = await res.json();
+
+      const tbody = document.querySelector('#logTable tbody');
+      tbody.innerHTML = '';
+
+      logs
+        .filter(log => {
+          const search = searchText.trim();
+          return !search || log.prompt.toLowerCase().includes(search) || log.response.toLowerCase().includes(search);
+        })
+        .forEach(log => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td><input type="checkbox" value="${log.id}" /></td>
+            <td>${log.id}</td>
+            <td>${log.computer_id}</td>
+            <td>${log.prompt.slice(0, 60)}...</td>
+            <td>${log.timestamp}</td>
+            <td><a href="#" onclick="showDetails(${log.id})">View</a></td>
+          `;
+          tbody.appendChild(row);
+        });
+    }
+
+    async function showDetails(logId) {
+      const res = await fetch('http://localhost:5001/api/logs');
+      const logs = await res.json();
+      const log = logs.find(l => l.id === logId);
+      if (!log) return;
+
+      const div = document.getElementById('logDetails');
+      div.style.display = 'block';
+      div.innerHTML = `
+        <h3>Log #${log.id}</h3>
+        <b>Computer:</b> ${log.computer_id}<br/>
+        <b>Time:</b> ${log.timestamp}<br/><br/>
+        <b>Prompt:</b><br/>
+        <pre>${log.prompt}</pre>
+        <b>Response:</b><br/>
+        <pre>${log.response}</pre>
+      `;
+    }
+
+    function selectAll() {
+      document.querySelectorAll('#logTable tbody input[type="checkbox"]').forEach(cb => cb.checked = true);
+    }
+
+    async function deleteSelected() {
+      const selectedIds = Array.from(document.querySelectorAll('#logTable tbody input[type="checkbox"]:checked'))
+        .map(cb => parseInt(cb.value));
+
+      if (selectedIds.length === 0) return alert('Select logs to delete.');
+
+      const res = await fetch('http://localhost:5001/api/logs/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: selectedIds })
+      });
+
+      if (res.ok) {
+        alert('Deleted!');
+        loadLogs();
+        document.getElementById('logDetails').style.display = 'none';
+      } else {
+        alert('Delete failed');
+      }
+    }
+
+    // Auto-load logs for today on page load
+    window.onload = () => {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('startDate').value = today;
+      document.getElementById('endDate').value = today;
+      loadLogs();
+    };
+  </script>
+</body>
+</html>
